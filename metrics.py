@@ -42,6 +42,38 @@ def max_drawdown(closes, window=DRAWDOWN_WINDOW):
     return worst
 
 
+def price_extremes(candles):
+    """Highest high and lowest low across the given candles."""
+    return max(c.high for c in candles), min(c.low for c in candles)
+
+
+def best_worst_day(candles):
+    """The single best and worst day-over-day % close change within `candles`.
+
+    Returns (best_candle, best_return_pct, worst_candle, worst_return_pct).
+    A "day" here is the candle the move landed on, not the one it started from.
+    """
+    closes = [c.close for c in candles]
+    returns = daily_returns(closes)  # returns[i] = change from candles[i] to candles[i+1]
+    best_i = max(range(len(returns)), key=lambda i: returns[i])
+    worst_i = min(range(len(returns)), key=lambda i: returns[i])
+    return (
+        candles[best_i + 1], returns[best_i] * 100,
+        candles[worst_i + 1], returns[worst_i] * 100,
+    )
+
+
+def volume_trend_pct(candles, recent_window=7):
+    """% difference between the average daily volume of the most recent
+    `recent_window` candles and the average of everything before that."""
+    volumes = [c.volume for c in candles]
+    recent = volumes[-recent_window:]
+    earlier = volumes[:-recent_window]
+    recent_avg = sum(recent) / len(recent)
+    earlier_avg = sum(earlier) / len(earlier)
+    return (recent_avg / earlier_avg - 1) * 100
+
+
 if __name__ == "__main__":
     for pair in PAIRS:
         complete, current = fetch_ohlc(pair)
